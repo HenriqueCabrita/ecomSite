@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Detail</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <h2>Power World</h2>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="/?page=1">Home <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <button id="cart" data-html="true" type="button" class="btn btn-secondary" data-container="body" data-toggle="popover" data-placement="bottom" data-content="">Cart(0)</button>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <img src="{{ product_object.image }}" alt="Product Image" class="img-fluid">
+            </div>
+            <div class="col-md-6">
+                <div class="mb-2" id="nm{{ product_object.id }}"><strong>{{ product_object.title }}</strong></div>
+                <div class="mb-2" id="price{{ product_object.id }}">{{ product_object.price }}€</div>
+                {% if product_object.discount_price %}
+                <div class="mb-2 text-success"><strong>Discount: {{ product_object.discount_price }}€</strong></div>
+                {% endif %}
+                <div class="mb-2">{{ product_object.description }}</div>
+                <a href="javascript:history.go(-1)" class="btn btn-primary">Go back</a>
+                <button id="{{ product_object.id }}" class="btn atc btn-warning btn-sm">Add to cart</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+        
+        $(document).ready(function() {
+            let cart = localStorage.getItem('cart') ? JSON.parse(localStorage.getItem('cart')) : {};
+            $('#cart').html(`Cart(${Object.keys(cart).length})`);
+            DisplayCart();
+
+            $('#cart').popover({
+                trigger: 'manual',
+                html: true,
+                placement: 'bottom'
+            });
+
+            let popoverTimeout;
+            $('#cart').hover(
+                function() { 
+                    clearTimeout(popoverTimeout);
+                    $('#cart').popover('show');
+                },
+                function() {
+                    popoverTimeout = setTimeout(() => {
+                        if (!$('.popover:hover').length) {
+                            $('#cart').popover('hide');
+                        }
+                    }, 200);
+                }
+            );
+    
+            $(document).on('mouseenter', '.popover', function() {
+                clearTimeout(popoverTimeout);
+            }).on('mouseleave', '.popover', function() {
+                $('#cart').popover('hide');
+            });
+
+            $(document).on('click', '.atc', function() {
+                const itemId = this.id;
+                const productName = $(`#nm${itemId}`).text().trim();
+                const productPrice = parseFloat($(`#price${itemId}`).text().replace('€', '').trim());
+
+                let cart = localStorage.getItem('cart') ? JSON.parse(localStorage.getItem('cart')) : {};
+
+                if (cart[itemId]) {
+                    cart[itemId][0] += 1;
+                    cart[itemId][2] += productPrice;
+                } else {
+                    cart[itemId] = [1, productName, productPrice];
+                }
+
+                localStorage.setItem('cart', JSON.stringify(cart));
+                $('#cart').html(`Cart(${Object.keys(cart).length})`);
+                DisplayCart();
+            });
+
+            function DisplayCart() {
+                let cart = localStorage.getItem('cart') ? JSON.parse(localStorage.getItem('cart')) : {};
+                let cartContent = "<h5>Your Cart</h5>";
+                if (Object.keys(cart).length === 0) {
+                    cartContent += "<div class='text-muted'>Cart is empty.</div>";
+                } else {
+                    for(const item in cart) {
+                        cartContent += `<div>${cart[item][1]} <span class="badge badge-primary">Qty: ${cart[item][0]}</span></div>`;
+                    }
+                    cartContent += `<a href="/checkout" class="btn btn-warning mt-2 w-100">Checkout</a>`;
+                }
+                $('#cart').attr('data-content', cartContent);
+                
+                if ($('#cart').data('bs.popover') && $('.popover').length) {
+                    $('#cart').popover('show');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
